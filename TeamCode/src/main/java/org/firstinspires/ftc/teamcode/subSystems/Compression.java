@@ -10,18 +10,15 @@ public class Compression {
 
     // Adjust these to the linkage's safe endpoints.
     public static double RETRACTED_POSITION = 0.25;
-    public static double EXTENDED_POSITION = 0.75;
+    public static double EXTENDED_POSITION = 0.40;
 
     private Servo servo;
-    private Servo secondServo;
     private double position;
 
     public void init(HardwareMap hardwareMap) {
         servo = hardwareMap.get(Servo.class, HARDWARE_NAME);
-        secondServo = hardwareMap.get(Servo.class, SECOND_HARDWARE_NAME);
 
         servo.setDirection(Servo.Direction.FORWARD);
-        secondServo.setDirection(Servo.Direction.REVERSE);
 
         retract();
     }
@@ -38,7 +35,6 @@ public class Compression {
         position = Range.clip(requestedPosition, 0.0, 1.0);
 
         servo.setPosition(position);
-        secondServo.setPosition(position);
     }
 
     public double getPosition() {

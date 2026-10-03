@@ -27,7 +27,8 @@ public class Outtake {
         flywheel.setPower(0.0);
         flywheelOn = false;
 
-        hoodPosition = Range.clip(HOOD_MIN, 0.0, 1.0);
+        hoodPosition = Range.clip(HOOD_MAX
+                , 0.0, 1.0);
         hood.setPosition(hoodPosition);
     }
 
