@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-import org.firstinspires.ftc.teamcode.subSystems.vision;
+import org.firstinspires.ftc.teamcode.subSystems.Vision;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,11 +46,11 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
     }
 
     private DcMotor aimMotor;
-    private vision visionSubsystem;
+    private Vision visionSubsystem;
 
     private int forwardTicks;
     private TestMode mode = TestMode.MANUAL;
-    private vision.Alliance selectedAlliance = vision.Alliance.NONE;
+    private Vision.Alliance selectedAlliance = Vision.Alliance.NONE;
 
     // Rising-edge tracking for mode/alliance buttons which prevents a held button from re-triggering.
     private boolean prevDpadUp, prevDpadDown, prevRightBumper, prevB, prevX;
@@ -71,7 +71,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
 
         forwardTicks = aimMotor.getCurrentPosition();
 
-        visionSubsystem = new vision(hardwareMap);
+        visionSubsystem = new Vision(hardwareMap);
         visionSubsystem.start();
 
         telemetry.addLine("Turret hardware test ready.");
@@ -101,7 +101,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
         // Read the Limelight exactly once this loop. Every consumer below (telemetry
         // and AUTO steering) reads this SAME frame - it is never re-fetched, so vision
         // monitoring and AUTO steering can never disagree about what the camera saw.
-        vision.Frame frame = visionSubsystem.update();
+        Vision.Frame frame = visionSubsystem.update();
 
         // Encoder-derived state. This is a completely separate error...
         // from the camera's bearing error above and must never be substituted for it
@@ -200,9 +200,9 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
         prevX = xButton;
 
         if (bPressed) {
-            selectedAlliance = vision.Alliance.RED;
+            selectedAlliance = Vision.Alliance.RED;
         } else if (xPressed) {
-            selectedAlliance = vision.Alliance.BLUE;
+            selectedAlliance = Vision.Alliance.BLUE;
         }
 
         TestMode before = mode;
@@ -227,7 +227,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
     }
 
     private boolean canEngageAuto() {
-        return limitsValidAndConfigured() && selectedAlliance != vision.Alliance.NONE;
+        return limitsValidAndConfigured() && selectedAlliance != Vision.Alliance.NONE;
     }
 
     private String buildAutoRefusedReason() {
@@ -237,7 +237,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
             sb.append("encoder limits not configured/validated");
             needsComma = true;
         }
-        if (selectedAlliance == vision.Alliance.NONE) {
+        if (selectedAlliance == Vision.Alliance.NONE) {
             if (needsComma) sb.append(", ");
             sb.append("no alliance selected (press B or X)");
         }
@@ -279,8 +279,8 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
      * never combined into the same fused bearing.
      * Returns null if the frame is not usable or no tag of the selected alliance is visible.
      */
-    private static ClusterFusion fuseBestCluster(vision.Frame frame, vision.Alliance alliance) {
-        if (!frame.isUsable() || alliance == vision.Alliance.NONE) {
+    private static ClusterFusion fuseBestCluster(Vision.Frame frame, Vision.Alliance alliance) {
+        if (!frame.isUsable() || alliance == Vision.Alliance.NONE) {
             return null;
         }
 
@@ -288,13 +288,13 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
         int bestCount = 0;
 
         for (int[] group : TurretHardwareTestConfig.CELL_TAG_GROUPS_PLACEHOLDER_VERIFY_BEFORE_USE) {
-            if (vision.allianceForId(group[0]) != alliance) {
+            if (Vision.allianceForId(group[0]) != alliance) {
                 continue; // this group belongs to the other alliance - skip entirely
             }
             List<Integer> seenIds = new ArrayList<>();
             List<Double> txs = new ArrayList<>();
             List<Double> tys = new ArrayList<>();
-            for (vision.TagObservation t : frame.tags) {
+            for (Vision.TagObservation t : frame.tags) {
                 if (t.alliance != alliance) {
                     continue; // never mix alliances into one fused bearing
                 }
@@ -327,7 +327,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
         // Fallback: an alliance tag was seen that isn't in the placeholder grouping
         // table above (e.g. the table is wrong/incomplete). Track it alone rather than
         // refusing to move at all, but never merge it with any other tag.
-        for (vision.TagObservation t : frame.tags) {
+        for (Vision.TagObservation t : frame.tags) {
             if (t.alliance == alliance) {
                 return new ClusterFusion(new int[]{t.id}, t.txDeg, t.tyDeg);
             }
@@ -345,7 +345,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
         return Math.max(min, Math.min(max, value));
     }
 
-    private void publishTelemetry(vision.Frame frame, int currentTicks, int relativeTicks,
+    private void publishTelemetry(Vision.Frame frame, int currentTicks, int relativeTicks,
                                   double commandedPower, AutoState autoState,
                                   ClusterFusion tracked, boolean emergencyStop) {
         telemetry.addLine("--- TURRET HARDWARE TEST ---");
@@ -353,7 +353,7 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
             telemetry.addLine("*** EMERGENCY STOP HELD (Back) ***");
         }
         telemetry.addData("Mode", mode);
-        telemetry.addData("Alliance", selectedAlliance == vision.Alliance.NONE
+        telemetry.addData("Alliance", selectedAlliance == Vision.Alliance.NONE
                 ? "NOT SELECTED (press B=red, X=blue)" : selectedAlliance);
         telemetry.addData("Encoder (abs / rel to fwd)", "%d / %d", currentTicks, relativeTicks);
         telemetry.addData("Commanded power", "%.3f", commandedPower);
@@ -373,12 +373,12 @@ public class TurretHardwareTestOpMode extends LinearOpMode {
                 telemetry.addLine("--- VISION MONITOR: camera only, turret will not move ---");
                 telemetry.addData("Frame status", "%s  usable=%b  age=%dms",
                         frame.status, frame.isUsable(), frame.stalenessMs);
-                if (selectedAlliance == vision.Alliance.NONE) {
+                if (selectedAlliance == Vision.Alliance.NONE) {
                     telemetry.addData("Tags (all, unfiltered)", frame.tags.size());
                     telemetry.addLine("Select an alliance (B/X) to filter to our tags.");
                 } else {
                     int shown = 0;
-                    for (vision.TagObservation t : frame.tags) {
+                    for (Vision.TagObservation t : frame.tags) {
                         if (t.alliance != selectedAlliance) {
                             continue; // opposing-alliance tags are filtered out of this view
                         }

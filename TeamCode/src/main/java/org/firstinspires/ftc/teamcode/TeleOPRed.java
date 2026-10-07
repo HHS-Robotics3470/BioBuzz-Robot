@@ -7,13 +7,14 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.subSystems.Compression;
 import org.firstinspires.ftc.teamcode.subSystems.Outtake;
 
-@TeleOp(name = "Shooter Compression Test", group = "Test")
+@TeleOp(name = "TeleOp Red", group = "Test")
 public class TeleOPRed extends OpMode {
     private static final double TRIGGER_THRESHOLD = 0.1;
     private static final double HOOD_STEP_INTERVAL_SECONDS = 0.04;
 
     private Outtake shooter;
     private Compression compression;
+    private Mecnum drive;
     private final ElapsedTime hoodTimer = new ElapsedTime();
 
     @Override
@@ -27,6 +28,8 @@ public class TeleOPRed extends OpMode {
         hoodTimer.reset();
         telemetry.addLine("SHOOTER COMPRESSION TEST v3 loaded");
         telemetry.update();
+
+        drive = new Mecnum(); drive.init(hardwareMap);
     }
 
     @Override
@@ -51,6 +54,8 @@ public class TeleOPRed extends OpMode {
         } else if (gamepad1.right_bumper && !gamepad1.left_bumper) {
             compression.extend();
         }
+
+        drive.driveRobot(gamepad1);
 
         telemetry.addLine("SHOOTER COMPRESSION TEST v3");
         telemetry.addData("Left bumper", gamepad1.left_bumper);

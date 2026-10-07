@@ -17,7 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-public class vision {
+public class Vision {
 // TODO: Make sure that blue/red alliance are differentiable
     // ------ Settings -----
     public static final class Config {
@@ -137,7 +137,7 @@ public class vision {
 
     // ----- LL Setup -----
 
-    public vision(HardwareMap hardwareMap) {
+    public Vision(HardwareMap hardwareMap) {
         try {
             limelight = hardwareMap.get(Limelight3A.class, Config.HARDWARE_NAME);
         } catch (IllegalArgumentException e) {
