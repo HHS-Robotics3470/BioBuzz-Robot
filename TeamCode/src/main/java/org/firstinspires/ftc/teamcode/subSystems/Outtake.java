@@ -27,14 +27,15 @@ public class Outtake {
         flywheel.setPower(0.0);
         flywheelOn = false;
 
-        hoodPosition = Range.clip(HOOD_MAX
-                , 0.0, 1.0);
+        hoodPosition = Range.clip(HOOD_MAX, 0.0, 1.0);
         hood.setPosition(hoodPosition);
     }
 
     public void enableFlywheel() {
         flywheelOn = true;
-        flywheel.setPower(Range.clip(FLYWHEEL_POWER, 0.0, 1.0));
+        flywheel.setPower(
+                Range.clip(FLYWHEEL_POWER, 0.0, 1.0)
+        );
     }
 
     public void disableFlywheel() {

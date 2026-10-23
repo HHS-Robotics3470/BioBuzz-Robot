@@ -17,25 +17,14 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 public class Vision {
-// TODO: Make sure that blue/red alliance are differentiable
-    // ------ Settings -----
     public static final class Config {
-        // Name in the Robot Configs
         public static final String HARDWARE_NAME = "vision";
-
-        // TODO: set to the real AprilTag pipeline number
         public static final int APRILTAG_PIPELINE_INDEX = 0;
-
-        // How often to ask LL for data
         public static final int POLL_RATE_HZ = 100;
+        public static final long MAX_STALENESS_MS = 250;
 
-        // TODO: tune. Data older than this is ignored
-        public static final long MAX_STALENESS_MS = 100;
-
-        public static final String EXPECTED_TAG_FAMILY = "36h11";
-
-        // CELL tag IDs for each alliance
         public static final int RED_CELL_ID_MIN = 30;
         public static final int RED_CELL_ID_MAX = 37;
         public static final int BLUE_CELL_ID_MIN = 38;
@@ -44,9 +33,10 @@ public class Vision {
         private Config() { }
     }
 
-    public enum Alliance { RED, BLUE, NONE }
+    public enum Alliance {
+        RED, BLUE, NONE
+    }
 
-    // Basically whether or not a frame can be used. Only safe to aim with.
     public enum Status {
         NOT_STARTED,
         DISCONNECTED,
@@ -57,23 +47,30 @@ public class Vision {
         OK
     }
 
-    // In the instance that only one tag seen by the camera
     public static final class TagObservation {
         public final int id;
-        public final Alliance alliance;  // NONE if not a CELL tag
-        public final double txDeg;       // left/right angle to tag
-        public final double tyDeg;       // up/down angle to tag
-        public final double area;        // tag size in image (last year's range table used this)
+        public final String family;
+        public final Alliance alliance;
+        public final double txDeg;
+        public final double tyDeg;
+        public final double area;
 
-        public final boolean hasPose;    // false if "Full 3D" is off
-        public final double camXIn, camYIn, camZIn;    // tag position from camera, inches
-        public final double rangeIn;                   // distance to tag, inches
-        public final double yawDeg, pitchDeg, rollDeg; // tag rotation from camera
+        public final boolean hasPose;
+        public final double camXIn;
+        public final double camYIn;
+        public final double camZIn;
+        public final double rangeIn;
+        public final double yawDeg;
+        public final double pitchDeg;
+        public final double rollDeg;
 
-        TagObservation(int id, Alliance alliance, double txDeg, double tyDeg, double area,
-                       boolean hasPose, double camXIn, double camYIn, double camZIn,
-                       double rangeIn, double yawDeg, double pitchDeg, double rollDeg) {
+        TagObservation(int id, String family, Alliance alliance,
+                       double txDeg, double tyDeg, double area,
+                       boolean hasPose, double camXIn, double camYIn,
+                       double camZIn, double rangeIn, double yawDeg,
+                       double pitchDeg, double rollDeg) {
             this.id = id;
+            this.family = family;
             this.alliance = alliance;
             this.txDeg = txDeg;
             this.tyDeg = tyDeg;
@@ -89,7 +86,6 @@ public class Vision {
         }
     }
 
-    // A tag we threw out, and why
     public static final class RejectedTag {
         public final int id;
         public final String reason;
@@ -100,17 +96,17 @@ public class Vision {
         }
     }
 
-    // Everything from one camera read
     public static final class Frame {
         public final Status status;
-        public final int reportedPipelineIndex; // -1 if unknown
-        public final long stalenessMs;          // age of the data, -1 if unknown
-        public final double readTimeSec;        // when we read it
+        public final int reportedPipelineIndex;
+        public final long stalenessMs;
+        public final double readTimeSec;
         public final List<TagObservation> tags;
         public final List<RejectedTag> rejected;
 
-        Frame(Status status, int reportedPipelineIndex, long stalenessMs, double readTimeSec,
-              List<TagObservation> tags, List<RejectedTag> rejected) {
+        Frame(Status status, int reportedPipelineIndex, long stalenessMs,
+              double readTimeSec, List<TagObservation> tags,
+              List<RejectedTag> rejected) {
             this.status = status;
             this.reportedPipelineIndex = reportedPipelineIndex;
             this.stalenessMs = stalenessMs;
@@ -119,14 +115,17 @@ public class Vision {
             this.rejected = Collections.unmodifiableList(rejected);
         }
 
-        // Only aim when this is true
         public boolean isUsable() {
             return status == Status.OK;
         }
 
-        static Frame empty(Status status, int pipeline, long stalenessMs, double readTimeSec) {
-            return new Frame(status, pipeline, stalenessMs, readTimeSec,
-                    new ArrayList<TagObservation>(), new ArrayList<RejectedTag>());
+        static Frame empty(Status status, int pipeline,
+                           long stalenessMs, double readTimeSec) {
+            return new Frame(
+                    status, pipeline, stalenessMs, readTimeSec,
+                    new ArrayList<TagObservation>(),
+                    new ArrayList<RejectedTag>()
+            );
         }
     }
 
@@ -135,19 +134,25 @@ public class Vision {
     private boolean started = false;
     private Frame latestFrame;
 
-    // ----- LL Setup -----
-
     public Vision(HardwareMap hardwareMap) {
         try {
-            limelight = hardwareMap.get(Limelight3A.class, Config.HARDWARE_NAME);
+            limelight = hardwareMap.get(
+                    Limelight3A.class,
+                    Config.HARDWARE_NAME
+            );
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException(
                     "Limelight3A not found in Robot Configuration under name \""
-                            + Config.HARDWARE_NAME + "\"", e);
+                            + Config.HARDWARE_NAME + "\"",
+                    e
+            );
         }
-        limelight.setPollRateHz(Config.POLL_RATE_HZ); // must be before start()
+
+        limelight.setPollRateHz(Config.POLL_RATE_HZ);
         limelight.pipelineSwitch(Config.APRILTAG_PIPELINE_INDEX);
-        latestFrame = Frame.empty(Status.NOT_STARTED, -1, -1, clock.seconds());
+        latestFrame = Frame.empty(
+                Status.NOT_STARTED, -1, -1, clock.seconds()
+        );
     }
 
     public void start() {
@@ -155,109 +160,134 @@ public class Vision {
         started = true;
     }
 
-    // Call when the OpMode ends
     public void stop() {
         limelight.stop();
         started = false;
-        latestFrame = Frame.empty(Status.NOT_STARTED, -1, -1, clock.seconds());
+        latestFrame = Frame.empty(
+                Status.NOT_STARTED, -1, -1, clock.seconds()
+        );
     }
 
-    // Read the camera once. Call this method once per loop.
     public Frame update() {
         double now = clock.seconds();
 
         if (!started) {
-            latestFrame = Frame.empty(Status.NOT_STARTED, -1, -1, now);
+            latestFrame = Frame.empty(
+                    Status.NOT_STARTED, -1, -1, now
+            );
             return latestFrame;
         }
+
         if (!limelight.isConnected()) {
-            latestFrame = Frame.empty(Status.DISCONNECTED, -1, -1, now);
+            latestFrame = Frame.empty(
+                    Status.DISCONNECTED, -1, -1, now
+            );
             return latestFrame;
         }
 
         LLResult result = limelight.getLatestResult();
         if (result == null) {
-            latestFrame = Frame.empty(Status.NO_RESULT, -1, -1, now);
+            latestFrame = Frame.empty(
+                    Status.NO_RESULT, -1, -1, now
+            );
             return latestFrame;
         }
 
         int pipeline = result.getPipelineIndex();
         long stalenessMs = result.getStaleness();
 
-        if (!result.isValid()) {
-            latestFrame = Frame.empty(Status.INVALID_RESULT, pipeline, stalenessMs, now);
-            return latestFrame;
-        }
-        if (pipeline != Config.APRILTAG_PIPELINE_INDEX) {
-            latestFrame = Frame.empty(Status.WRONG_PIPELINE, pipeline, stalenessMs, now);
-            return latestFrame;
-        }
-        if (stalenessMs < 0 || stalenessMs > Config.MAX_STALENESS_MS) {
-            latestFrame = Frame.empty(Status.STALE, pipeline, stalenessMs, now);
-            return latestFrame;
-        }
-
         List<TagObservation> tags = new ArrayList<>();
         List<RejectedTag> rejected = new ArrayList<>();
 
-        List<LLResultTypes.FiducialResult> fiducials = result.getFiducialResults();
+        List<LLResultTypes.FiducialResult> fiducials =
+                result.getFiducialResults();
+
         if (fiducials != null) {
             for (LLResultTypes.FiducialResult fr : fiducials) {
                 convert(fr, tags, rejected);
             }
         }
 
-        latestFrame = new Frame(Status.OK, pipeline, stalenessMs, now, tags, rejected);
+        // Keep detections for telemetry even if the frame cannot drive aiming.
+        Status status = !result.isValid()
+                ? Status.INVALID_RESULT
+                : pipeline != Config.APRILTAG_PIPELINE_INDEX
+                  ? Status.WRONG_PIPELINE
+                  : stalenessMs < 0
+                || stalenessMs > Config.MAX_STALENESS_MS
+                    ? Status.STALE
+                    : Status.OK;
+
+        latestFrame = new Frame(
+                status, pipeline, stalenessMs, now, tags, rejected
+        );
         return latestFrame;
     }
 
-    // Last frame from update(). Would never be null.
     public Frame getLatestFrame() {
         return latestFrame;
     }
 
-    // Turn one Limelight tag into a TagObservation (or reject it if not applicable)
+    public boolean isConnected() {
+        return limelight.isConnected();
+    }
+
     private static void convert(LLResultTypes.FiducialResult fr,
-                                List<TagObservation> tags, List<RejectedTag> rejected) {
+                                List<TagObservation> tags,
+                                List<RejectedTag> rejected) {
         if (fr == null) {
             return;
         }
+
         int id = fr.getFiducialId();
-
-        if (!familyMatches(fr.getFamily())) {
-            rejected.add(new RejectedTag(id, "family " + fr.getFamily()));
-            return;
-        }
-
         double txDeg = fr.getTargetXDegrees();
         double tyDeg = fr.getTargetYDegrees();
+
         if (!Double.isFinite(txDeg) || !Double.isFinite(tyDeg)) {
             rejected.add(new RejectedTag(id, "bad tx/ty"));
             return;
         }
 
-        // 3D data only exists if "Full 3D" is on. If missing, range is NaN. CHECK
-        double x = Double.NaN, y = Double.NaN, z = Double.NaN, range = Double.NaN;
-        double yaw = Double.NaN, pitch = Double.NaN, roll = Double.NaN;
+        double x = Double.NaN;
+        double y = Double.NaN;
+        double z = Double.NaN;
+        double range = Double.NaN;
+        double yaw = Double.NaN;
+        double pitch = Double.NaN;
+        double roll = Double.NaN;
         boolean hasPose = false;
 
         Pose3D pose = fr.getTargetPoseCameraSpace();
-        if (pose != null && pose.getPosition() != null && pose.getOrientation() != null) {
+        if (pose != null
+                && pose.getPosition() != null
+                && pose.getOrientation() != null) {
+
             Position p = pose.getPosition().toUnit(DistanceUnit.INCH);
             YawPitchRollAngles o = pose.getOrientation();
-            double px = p.x, py = p.y, pz = p.z;
+
+            double px = p.x;
+            double py = p.y;
+            double pz = p.z;
             double r = Math.sqrt(px * px + py * py + pz * pz);
+
             double pyaw = o.getYaw(AngleUnit.DEGREES);
             double ppitch = o.getPitch(AngleUnit.DEGREES);
             double proll = o.getRoll(AngleUnit.DEGREES);
 
-            // Note: All zeros means no 3D data
-            boolean finite = Double.isFinite(r) && Double.isFinite(pyaw)
-                    && Double.isFinite(ppitch) && Double.isFinite(proll);
+            boolean finite = Double.isFinite(r)
+                    && Double.isFinite(pyaw)
+                    && Double.isFinite(ppitch)
+                    && Double.isFinite(proll);
+
             if (finite && r > 0.0) {
                 hasPose = true;
-                x = px; y = py; z = pz; range = r;
-                yaw = pyaw; pitch = ppitch; roll = proll;
+                x = px;
+                y = py;
+                z = pz;
+                range = r;
+                yaw = pyaw;
+                pitch = ppitch;
+                roll = proll;
             }
         }
 
@@ -266,67 +296,99 @@ public class Vision {
             area = Double.NaN;
         }
 
-        tags.add(new TagObservation(id, allianceForId(id), txDeg, tyDeg, area,
-                hasPose, x, y, z, range, yaw, pitch, roll));
+        String family = fr.getFamily() == null
+                ? ""
+                : fr.getFamily();
+
+        tags.add(new TagObservation(
+                id, family, allianceForId(id),
+                txDeg, tyDeg, area,
+                hasPose, x, y, z, range,
+                yaw, pitch, roll
+        ));
     }
 
-    // Accepts "36h11", "36H11", "tag36h11". Blank is allowed.
-    private static boolean familyMatches(String family) {
-        if (family == null || family.isEmpty()) {
-            return true;
-        }
-        String norm = family.toLowerCase().replaceAll("[^a-z0-9]", "");
-        return norm.endsWith(Config.EXPECTED_TAG_FAMILY);
-    }
-
-    // Which alliance a tag ID belongs to
     public static Alliance allianceForId(int id) {
-        if (id >= Config.RED_CELL_ID_MIN && id <= Config.RED_CELL_ID_MAX) {
+        if (id >= Config.RED_CELL_ID_MIN
+                && id <= Config.RED_CELL_ID_MAX) {
             return Alliance.RED;
         }
-        if (id >= Config.BLUE_CELL_ID_MIN && id <= Config.BLUE_CELL_ID_MAX) {
+        if (id >= Config.BLUE_CELL_ID_MIN
+                && id <= Config.BLUE_CELL_ID_MAX) {
             return Alliance.BLUE;
         }
         return Alliance.NONE;
     }
 
-    // ---- Telemetry ----
-
     public void addTelemetry(Telemetry telemetry) {
         Frame f = latestFrame;
+
         telemetry.addLine("--- Vision (Limelight) ---");
         telemetry.addData("LL", "connected=%b running=%b",
-                limelight.isConnected(), limelight.isRunning());
+                limelight.isConnected(),
+                limelight.isRunning());
 
         LLStatus s = limelight.getStatus();
         if (s != null) {
-            telemetry.addData("LL status", "pipe %d (%s)  fps %d  temp %.1fC  cpu %.0f%%",
-                    s.getPipelineIndex(), s.getPipelineType(),
-                    (int) s.getFps(), s.getTemp(), s.getCpu());
+            telemetry.addData(
+                    "LL status",
+                    "pipe %d (%s) fps %d temp %.1fC cpu %.0f%%",
+                    s.getPipelineIndex(),
+                    s.getPipelineType(),
+                    (int) s.getFps(),
+                    s.getTemp(),
+                    s.getCpu()
+            );
         }
 
-        telemetry.addData("Frame", "%s  pipe=%d (want %d)  age=%dms",
-                f.status, f.reportedPipelineIndex, Config.APRILTAG_PIPELINE_INDEX, f.stalenessMs);
+        telemetry.addData(
+                "Frame",
+                "%s pipe=%d (want %d) age=%dms",
+                f.status,
+                f.reportedPipelineIndex,
+                Config.APRILTAG_PIPELINE_INDEX,
+                f.stalenessMs
+        );
 
         if (f.tags.isEmpty()) {
             telemetry.addData("Tags", "none");
         } else {
             StringBuilder ids = new StringBuilder();
             for (TagObservation t : f.tags) {
-                if (ids.length() > 0) ids.append(' ');
-                ids.append(t.id);
+                if (ids.length() > 0) {
+                    ids.append(' ');
+                }
+                ids.append(t.id)
+                        .append('(')
+                        .append(t.family)
+                        .append(')');
             }
-            telemetry.addData("Tags (" + f.tags.size() + ")", ids.toString());
+
+            telemetry.addData(
+                    "Tags (" + f.tags.size() + ")",
+                    ids.toString()
+            );
+
             for (TagObservation t : f.tags) {
-                telemetry.addData("  tag " + t.id,
+                telemetry.addData(
+                        "  tag " + t.id,
                         "%s tx=%.1f ty=%.1f ta=%.4f range=%s",
-                        t.alliance, t.txDeg, t.tyDeg, t.area,
-                        t.hasPose ? String.format("%.1fin", t.rangeIn) : "n/a");
+                        t.alliance,
+                        t.txDeg,
+                        t.tyDeg,
+                        t.area,
+                        t.hasPose
+                                ? String.format("%.1fin", t.rangeIn)
+                                : "n/a"
+                );
             }
         }
 
         for (RejectedTag r : f.rejected) {
-            telemetry.addData("  rejected " + r.id, r.reason);
+            telemetry.addData(
+                    "  rejected " + r.id,
+                    r.reason
+            );
         }
     }
 }
