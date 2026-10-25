@@ -1,13 +1,15 @@
 
 package org.firstinspires.ftc.teamcode.subSystems;
 
-import com.bylazar.configurables.annotations.Configurable;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-@Configurable
+import org.firstinspires.ftc.robotcontroller.external.samples.externalhardware.RobotHardware;
+
+
 public class Mecnum implements Subsystems {
     private RobotHardware robotHardware;
 
