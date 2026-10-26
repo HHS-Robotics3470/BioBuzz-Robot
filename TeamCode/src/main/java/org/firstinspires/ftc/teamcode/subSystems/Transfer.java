@@ -11,8 +11,8 @@ public class Transfer implements Subsystems {
 
     private DcMotor transferMotor;
 
-    public static double TRANSFER_POWER = 1;
-    public static double OUTTAKE_POWER = -1;
+    public static double TRANSFER_POWER = 1.0;
+    public static double OUTTAKE_POWER = -1.0;
 
     @Override
     public void init(HardwareMap hardwareMap){
