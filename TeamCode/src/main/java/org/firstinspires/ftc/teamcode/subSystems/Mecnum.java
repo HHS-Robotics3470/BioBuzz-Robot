@@ -4,6 +4,7 @@ package org.firstinspires.ftc.teamcode.subSystems;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
@@ -40,15 +41,15 @@ public class Mecnum implements Subsystems {
 
         stopAllMotors();
     }
-        @Override
-        public void stop() { stopAllMotors(); }
+    @Override
+    public void stop() { stopAllMotors(); }
 
-        public void stopAllMotors() {
-            fLeft.setPower(0);
-            fRight.setPower(0);
-            bLeft.setPower(0);
-            bRight.setPower(0);
-        }
+    public void stopAllMotors() {
+        fLeft.setPower(0);
+        fRight.setPower(0);
+        bLeft.setPower(0);
+        bRight.setPower(0);
+    }
 
     public void setSafePower(DcMotor motor, double targetPower){
         final double SLEW_RATE = 0.2;  // max change per cycle
@@ -102,5 +103,4 @@ public class Mecnum implements Subsystems {
         }
         stopAllMotors();
     }
-
 }
